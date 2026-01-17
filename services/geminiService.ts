@@ -1,7 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { JourneyStep } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Removemos a inicialização global para evitar erro se a chave estiver vazia no load inicial
+// const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const generateJourneySuggestion = async (
   campaignName: string,
@@ -9,6 +10,16 @@ export const generateJourneySuggestion = async (
   targetAudience: string
 ): Promise<JourneyStep[]> => {
   
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY não encontrada.");
+    throw new Error("Chave de API do Gemini não configurada. Adicione GEMINI_API_KEY nas variáveis de ambiente.");
+  }
+
+  // Inicializa apenas quando for usar
+  const ai = new GoogleGenAI({ apiKey: apiKey });
+
   const prompt = `
     Create a strategic, multi-step ABM (Account Based Marketing) outreach sequence for a campaign named "${campaignName}".
     
