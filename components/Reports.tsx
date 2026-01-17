@@ -351,42 +351,54 @@ const Reports: React.FC = () => {
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                   {/* Quentes */}
-                  <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-center flex flex-col items-center">
-                      <div className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/50 px-3 py-1 rounded-full mb-3 border border-orange-200 dark:border-orange-800">
-                          &gt; 500 pts
+                  <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-center flex flex-col items-center justify-between">
+                      <div className="w-full text-center mb-2">
+                         <span className="text-xs font-black uppercase text-orange-600 bg-orange-200/50 dark:bg-orange-900/50 px-2 py-1 rounded">
+                             &gt; 500 pts
+                         </span>
                       </div>
-                      <div className="flex items-center justify-center gap-1 text-orange-600 font-bold mb-1">
-                          <span className="material-symbols-outlined">local_fire_department</span>
-                          <span>Quentes</span>
+                      <div className="flex flex-col items-center">
+                          <div className="flex items-center justify-center gap-1 text-orange-600 font-bold mb-1">
+                              <span className="material-symbols-outlined">local_fire_department</span>
+                              <span>Quentes</span>
+                          </div>
+                          <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.hot}</span>
                       </div>
-                      <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.hot}</span>
-                      <p className="text-xs text-slate-500 mt-1">{Math.round((temperatureStats.hot / temperatureStats.total) * 100)}% da base</p>
+                      <p className="text-xs text-slate-500 mt-2">{Math.round((temperatureStats.hot / temperatureStats.total) * 100)}% da base</p>
                   </div>
                   
                   {/* Mornas */}
-                  <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/30 text-center flex flex-col items-center">
-                      <div className="inline-flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-100 dark:bg-yellow-900/50 px-3 py-1 rounded-full mb-3 border border-yellow-200 dark:border-yellow-800">
-                          300 - 500 pts
+                  <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/30 text-center flex flex-col items-center justify-between">
+                      <div className="w-full text-center mb-2">
+                         <span className="text-xs font-black uppercase text-yellow-700 bg-yellow-200/50 dark:bg-yellow-900/50 px-2 py-1 rounded">
+                             300 - 500 pts
+                         </span>
                       </div>
-                      <div className="flex items-center justify-center gap-1 text-yellow-600 font-bold mb-1">
-                          <span className="material-symbols-outlined">wb_sunny</span>
-                          <span>Mornas</span>
+                      <div className="flex flex-col items-center">
+                          <div className="flex items-center justify-center gap-1 text-yellow-600 font-bold mb-1">
+                              <span className="material-symbols-outlined">wb_sunny</span>
+                              <span>Mornas</span>
+                          </div>
+                          <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.warm}</span>
                       </div>
-                      <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.warm}</span>
-                      <p className="text-xs text-slate-500 mt-1">{Math.round((temperatureStats.warm / temperatureStats.total) * 100)}% da base</p>
+                      <p className="text-xs text-slate-500 mt-2">{Math.round((temperatureStats.warm / temperatureStats.total) * 100)}% da base</p>
                   </div>
 
                   {/* Frias */}
-                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 text-center flex flex-col items-center">
-                      <div className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/50 px-3 py-1 rounded-full mb-3 border border-blue-200 dark:border-blue-800">
-                          &lt; 300 pts
+                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 text-center flex flex-col items-center justify-between">
+                      <div className="w-full text-center mb-2">
+                         <span className="text-xs font-black uppercase text-blue-600 bg-blue-200/50 dark:bg-blue-900/50 px-2 py-1 rounded">
+                             &lt; 300 pts
+                         </span>
                       </div>
-                      <div className="flex items-center justify-center gap-1 text-blue-500 font-bold mb-1">
-                          <span className="material-symbols-outlined">ac_unit</span>
-                          <span>Frias</span>
+                      <div className="flex flex-col items-center">
+                          <div className="flex items-center justify-center gap-1 text-blue-500 font-bold mb-1">
+                              <span className="material-symbols-outlined">ac_unit</span>
+                              <span>Frias</span>
+                          </div>
+                          <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.cold}</span>
                       </div>
-                      <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.cold}</span>
-                      <p className="text-xs text-slate-500 mt-1">{Math.round((temperatureStats.cold / temperatureStats.total) * 100)}% da base</p>
+                      <p className="text-xs text-slate-500 mt-2">{Math.round((temperatureStats.cold / temperatureStats.total) * 100)}% da base</p>
                   </div>
               </div>
 
