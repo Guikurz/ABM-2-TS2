@@ -347,41 +347,46 @@ const Reports: React.FC = () => {
                       <span className="material-symbols-outlined text-orange-500">thermostat</span>
                       Saúde da Carteira (Temperatura)
                   </h3>
-                  {/* Legend / Rules */}
-                  <div className="text-[10px] text-slate-500 bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700">
-                      <p><strong>Critérios de Pontuação:</strong></p>
-                      <p><span className="text-blue-500 font-bold">&lt; 300 pts:</span> Fria</p>
-                      <p><span className="text-yellow-600 font-bold">300 - 500 pts:</span> Morna</p>
-                      <p><span className="text-orange-500 font-bold">&gt; 500 pts:</span> Quente</p>
-                  </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  {/* Quentes */}
+                  <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 text-center flex flex-col items-center">
+                      <div className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/50 px-3 py-1 rounded-full mb-3 border border-orange-200 dark:border-orange-800">
+                          &gt; 500 pts
+                      </div>
                       <div className="flex items-center justify-center gap-1 text-orange-600 font-bold mb-1">
                           <span className="material-symbols-outlined">local_fire_department</span>
                           <span>Quentes</span>
                       </div>
-                      <span className="text-2xl font-bold text-slate-900 dark:text-white">{temperatureStats.hot}</span>
-                      <p className="text-xs text-slate-500">{Math.round((temperatureStats.hot / temperatureStats.total) * 100)}% da base</p>
+                      <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.hot}</span>
+                      <p className="text-xs text-slate-500 mt-1">{Math.round((temperatureStats.hot / temperatureStats.total) * 100)}% da base</p>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/30 text-center">
+                  {/* Mornas */}
+                  <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/30 text-center flex flex-col items-center">
+                      <div className="inline-flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-100 dark:bg-yellow-900/50 px-3 py-1 rounded-full mb-3 border border-yellow-200 dark:border-yellow-800">
+                          300 - 500 pts
+                      </div>
                       <div className="flex items-center justify-center gap-1 text-yellow-600 font-bold mb-1">
                           <span className="material-symbols-outlined">wb_sunny</span>
                           <span>Mornas</span>
                       </div>
-                      <span className="text-2xl font-bold text-slate-900 dark:text-white">{temperatureStats.warm}</span>
-                      <p className="text-xs text-slate-500">{Math.round((temperatureStats.warm / temperatureStats.total) * 100)}% da base</p>
+                      <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.warm}</span>
+                      <p className="text-xs text-slate-500 mt-1">{Math.round((temperatureStats.warm / temperatureStats.total) * 100)}% da base</p>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 text-center">
+                  {/* Frias */}
+                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 text-center flex flex-col items-center">
+                      <div className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/50 px-3 py-1 rounded-full mb-3 border border-blue-200 dark:border-blue-800">
+                          &lt; 300 pts
+                      </div>
                       <div className="flex items-center justify-center gap-1 text-blue-500 font-bold mb-1">
                           <span className="material-symbols-outlined">ac_unit</span>
                           <span>Frias</span>
                       </div>
-                      <span className="text-2xl font-bold text-slate-900 dark:text-white">{temperatureStats.cold}</span>
-                      <p className="text-xs text-slate-500">{Math.round((temperatureStats.cold / temperatureStats.total) * 100)}% da base</p>
+                      <span className="text-3xl font-bold text-slate-900 dark:text-white">{temperatureStats.cold}</span>
+                      <p className="text-xs text-slate-500 mt-1">{Math.round((temperatureStats.cold / temperatureStats.total) * 100)}% da base</p>
                   </div>
               </div>
 
