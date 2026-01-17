@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { JourneyStep } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const generateJourneySuggestion = async (
   campaignName: string,
