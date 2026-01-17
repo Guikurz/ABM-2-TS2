@@ -71,9 +71,9 @@ const AudienceSelector: React.FC<AudienceSelectorProps> = ({ contacts, targetCom
               className="group flex items-center gap-3 p-2 rounded border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer relative"
             >
               {/* Avatar */}
-              {contact.type === 'generic' ? (
-                  <div className="size-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold shrink-0">
-                      {contact.name.charAt(0)}
+              {contact.type === 'generic' || !contact.avatar ? (
+                  <div className="size-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold shrink-0 border border-orange-200 dark:border-orange-900/30">
+                      {contact.name.charAt(0).toUpperCase()}
                   </div>
               ) : (
                   <div 

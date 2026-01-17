@@ -141,7 +141,7 @@ const CampaignEditor: React.FC<CampaignEditorProps> = ({ onNavigate, onSave, onD
                         company: c.company || '',
                         status: c.status || 'New',
                         last: '-',
-                        avatar: '',
+                        avatar: c.avatar || '', // FIXED: Using avatar from DB instead of ''
                         priority: c.priority || 'Média',
                         selected: true 
                    }));

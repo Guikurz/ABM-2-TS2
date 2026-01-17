@@ -20,8 +20,52 @@ interface TimelineItem {
     color: string;
 }
 
+// Extracted PersonalItem component to prevent re-renders losing focus
+const PersonalItem = ({ 
+    icon, 
+    label, 
+    field, 
+    colorClass = "text-slate-400",
+    isEditing,
+    formData,
+    data,
+    onChange
+}: { 
+    icon: string, 
+    label: string, 
+    field: string, 
+    colorClass?: string,
+    isEditing: boolean,
+    formData: any,
+    data: any,
+    onChange: (field: string, value: any) => void
+}) => (
+    <div className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+        <div className={`size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 ${colorClass}`}>
+            <span className="material-symbols-outlined text-[20px]">{icon}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-0.5">{label}</p>
+            {isEditing ? (
+                <input 
+                    type="text" 
+                    value={formData[field] || ''} 
+                    onChange={(e) => onChange(field, e.target.value)} 
+                    className="w-full px-2 py-1 h-7 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                    placeholder="—"
+                />
+            ) : (
+                <p className={`text-sm font-bold truncate ${!data[field] ? 'text-slate-300 dark:text-slate-600 font-normal' : 'text-slate-800 dark:text-slate-200'}`} title={String(data[field])}>
+                    {data[field] || '—'}
+                </p>
+            )}
+        </div>
+    </div>
+);
+
 const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack, onCompanyClick }) => {
   // Initialize state with props + empty defaults for "not defined" appearance
+  // This initial state is temporary until the fetch completes
   const initialData = {
     ...contact,
     phone: contact.phone || '',
@@ -60,6 +104,52 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // --- 1. Fetch Full Contact Data on Mount ---
+  // This ensures we have fields that might be missing from the list view (phone, linkedin, etc.)
+  useEffect(() => {
+    const fetchFullContact = async () => {
+        try {
+            const { data: dbContact, error } = await supabase
+                .from('contacts')
+                .select('*')
+                .eq('id', contact.id)
+                .single();
+
+            if (error) throw error;
+
+            if (dbContact) {
+                // Map snake_case from DB to camelCase for UI if needed, or use existing fields
+                const fullData = {
+                    ...initialData,
+                    ...dbContact,
+                    // Explicitly map potentially different column names
+                    personalEmail: dbContact.personal_email || dbContact.personalEmail || '',
+                    sportsTeam: dbContact.sports_team || dbContact.sportsTeam || '',
+                    maritalStatus: dbContact.marital_status || dbContact.maritalStatus || '',
+                    activeCampaign: dbContact.active_campaign || dbContact.activeCampaign || '',
+                    // Ensure generic fields are populated
+                    phone: dbContact.phone || '',
+                    linkedin: dbContact.linkedin || '',
+                    instagram: dbContact.instagram || '',
+                    address: dbContact.address || '',
+                    age: dbContact.age || '',
+                    children: dbContact.children || '',
+                    pets: dbContact.pets || '',
+                    hobbies: dbContact.hobbies || '',
+                    owners: dbContact.owners || []
+                };
+                
+                setData(fullData);
+                setFormData(fullData);
+            }
+        } catch (e) {
+            console.error("Error fetching full contact details:", e);
+        }
+    };
+
+    fetchFullContact();
+  }, [contact.id]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -129,6 +219,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
             updatedNotes += `\n[HISTORY:MOVED:${dateStr}] Mudou da empresa ${data.company} para ${formData.company}`;
         }
 
+        // Prepare Payload - Map camelCase to snake_case for DB
         const payload: any = {
             name: formData.name,
             role: formData.role,
@@ -137,9 +228,18 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
             phone: formData.phone,
             linkedin: formData.linkedin,
             instagram: formData.instagram,
-            avatar: formData.avatar, // Ensure avatar URL is saved
+            avatar: formData.avatar, 
             notes: updatedNotes,
-            owners: formData.owners, // Save owners change
+            owners: formData.owners,
+            address: formData.address,
+            age: formData.age,
+            children: formData.children,
+            pets: formData.pets,
+            hobbies: formData.hobbies,
+            // Snake case mappings for specific fields
+            personal_email: formData.personalEmail,
+            sports_team: formData.sportsTeam,
+            marital_status: formData.maritalStatus,
             updated_at: new Date().toISOString()
         };
 
@@ -366,30 +466,6 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
     return <p className="text-base font-semibold text-slate-900 dark:text-white truncate" title={String(val)}>{val}</p>;
   };
 
-  const PersonalItem = ({ icon, label, field, colorClass = "text-slate-400" }: { icon: string, label: string, field: keyof typeof initialData, colorClass?: string }) => (
-    <div className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-        <div className={`size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 ${colorClass}`}>
-            <span className="material-symbols-outlined text-[20px]">{icon}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-0.5">{label}</p>
-            {isEditing ? (
-                <input 
-                    type="text" 
-                    value={formData[field] as string} 
-                    onChange={(e) => handleChange(field as string, e.target.value)} 
-                    className="w-full px-2 py-1 h-7 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                    placeholder="—"
-                />
-            ) : (
-                <p className={`text-sm font-bold truncate ${!data[field] ? 'text-slate-300 dark:text-slate-600 font-normal' : 'text-slate-800 dark:text-slate-200'}`} title={String(data[field])}>
-                    {data[field] || '—'}
-                </p>
-            )}
-        </div>
-    </div>
-  );
-
   const displayNotes = isEditing 
     ? formData.notes 
     : (data.notes || '').replace(/\[HISTORY:.*?\] .*/g, '').trim();
@@ -550,7 +626,6 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* ... (Rest of the component remains similar, just collapsing for brevity in XML if not changed, but I will include it to ensure consistency) */}
         
         {/* Left Column: Info & Personal (Width 7/12) */}
         <div className="lg:col-span-7 flex flex-col gap-6">
@@ -631,7 +706,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                          ) : (
                              <div className="flex gap-4">
                                 {data.linkedin ? (
-                                    <a href={`https://${data.linkedin}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#0077b5]/10 hover:bg-[#0077b5]/20 text-[#0077b5] transition-colors border border-[#0077b5]/20">
+                                    <a href={data.linkedin.startsWith('http') ? data.linkedin : `https://${data.linkedin}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#0077b5]/10 hover:bg-[#0077b5]/20 text-[#0077b5] transition-colors border border-[#0077b5]/20">
                                         <span className="font-bold text-xl">in</span>
                                         <span className="text-sm font-bold">LinkedIn Profile</span>
                                         <span className="material-symbols-outlined text-[16px]">open_in_new</span>
@@ -643,7 +718,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                                     </div>
                                 )}
                                 {data.instagram ? (
-                                    <a href={`https://${data.instagram}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#E1306C]/10 hover:bg-[#E1306C]/20 text-[#E1306C] transition-colors border border-[#E1306C]/20">
+                                    <a href={`https://instagram.com/${data.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[#E1306C]/10 hover:bg-[#E1306C]/20 text-[#E1306C] transition-colors border border-[#E1306C]/20">
                                         <span className="font-bold text-xl">IG</span>
                                         <span className="text-sm font-bold">Instagram</span>
                                         <span className="material-symbols-outlined text-[16px]">open_in_new</span>
@@ -668,12 +743,12 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <PersonalItem icon="cake" label="Idade" field="age" colorClass="text-pink-500" />
-                     <PersonalItem icon="favorite" label="Estado Civil" field="maritalStatus" colorClass="text-red-500" />
-                     <PersonalItem icon="child_care" label="Filhos" field="children" colorClass="text-blue-500" />
-                     <PersonalItem icon="pets" label="Pets" field="pets" colorClass="text-orange-500" />
-                     <PersonalItem icon="sports_soccer" label="Time do Coração" field="sportsTeam" colorClass="text-green-600" />
-                     <PersonalItem icon="palette" label="Hobbies" field="hobbies" colorClass="text-purple-500" />
+                     <PersonalItem icon="cake" label="Idade" field="age" colorClass="text-pink-500" isEditing={isEditing} formData={formData} data={data} onChange={handleChange} />
+                     <PersonalItem icon="favorite" label="Estado Civil" field="maritalStatus" colorClass="text-red-500" isEditing={isEditing} formData={formData} data={data} onChange={handleChange} />
+                     <PersonalItem icon="child_care" label="Filhos" field="children" colorClass="text-blue-500" isEditing={isEditing} formData={formData} data={data} onChange={handleChange} />
+                     <PersonalItem icon="pets" label="Pets" field="pets" colorClass="text-orange-500" isEditing={isEditing} formData={formData} data={data} onChange={handleChange} />
+                     <PersonalItem icon="sports_soccer" label="Time do Coração" field="sportsTeam" colorClass="text-green-600" isEditing={isEditing} formData={formData} data={data} onChange={handleChange} />
+                     <PersonalItem icon="palette" label="Hobbies" field="hobbies" colorClass="text-purple-500" isEditing={isEditing} formData={formData} data={data} onChange={handleChange} />
                 </div>
             </div>
 
