@@ -11,6 +11,9 @@ interface CompanyDetailsPageProps {
 }
 
 const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack, onContactClick, userId, onNotify }) => {
+  // Local state for the company to allow instant updates
+  const [currentCompany, setCurrentCompany] = useState<Company>(company);
+  
   const [companyContacts, setCompanyContacts] = useState<Contact[]>([]);
   const [companyCampaigns, setCompanyCampaigns] = useState<any[]>([]);
   const [companyDeals, setCompanyDeals] = useState<Deal[]>([]);
@@ -21,10 +24,14 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDealModal, setShowDealModal] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [showEditCompanyModal, setShowEditCompanyModal] = useState(false);
   
   // Data States for Modals
   const [newContact, setNewContact] = useState({ name: '', email: '', role: '', owner: '' });
   const [newDeal, setNewDeal] = useState({ title: '', value: '', status: 'Open' as 'Open' | 'Won' | 'Lost' });
+  const [editCompanyData, setEditCompanyData] = useState({
+      name: '', industry: '', size: '', domain: '', location: '', description: ''
+  });
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -36,7 +43,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
         const { data: contactsData } = await supabase
             .from('contacts')
             .select('*')
-            .eq('company', company.name); 
+            .eq('company', currentCompany.name); 
 
         if (contactsData) {
             const mappedContacts: Contact[] = contactsData.map(c => ({
@@ -61,7 +68,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
         const { data: campaignsData } = await supabase
             .from('campaigns')
             .select('*')
-            .eq('target_company', company.name);
+            .eq('target_company', currentCompany.name);
 
         if (campaignsData) {
             const mappedCampaigns = campaignsData.map(c => ({
@@ -80,7 +87,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
         const { data: dealsData, error: dealsError } = await supabase
             .from('deals')
             .select('*')
-            .eq('company_id', company.id);
+            .eq('company_id', currentCompany.id);
 
         if (dealsError) {
             console.warn("Deals fetch warning:", dealsError.message);
@@ -113,7 +120,54 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
   useEffect(() => {
     fetchData();
     fetchUsers();
-  }, [company.name]);
+  }, [currentCompany.name]);
+
+  // Handle Edit Company Open
+  const handleOpenEditCompany = () => {
+      setEditCompanyData({
+          name: currentCompany.name,
+          industry: currentCompany.industry || '',
+          size: currentCompany.size || '',
+          domain: currentCompany.domain || '',
+          location: currentCompany.location || '',
+          description: currentCompany.description || ''
+      });
+      setShowEditCompanyModal(true);
+  };
+
+  // Handle Update Company
+  const handleUpdateCompany = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+          const { error } = await supabase
+              .from('companies')
+              .update({
+                  name: editCompanyData.name,
+                  industry: editCompanyData.industry,
+                  size: editCompanyData.size,
+                  domain: editCompanyData.domain,
+                  location: editCompanyData.location,
+                  description: editCompanyData.description,
+                  updated_at: new Date().toISOString()
+              })
+              .eq('id', currentCompany.id);
+
+          if (error) throw error;
+
+          // Update local state
+          setCurrentCompany(prev => ({
+              ...prev,
+              ...editCompanyData
+          }));
+
+          setShowEditCompanyModal(false);
+          if (onNotify) onNotify('Sucesso', 'Informações da empresa atualizadas.', 'success', 'companies');
+
+      } catch (err: any) {
+          console.error("Update company error", err);
+          alert("Erro ao atualizar empresa: " + err.message);
+      }
+  };
 
   // Handle Manual Creation
   const handleCreateContact = async (e: React.FormEvent) => {
@@ -133,7 +187,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
             name: newContact.name,
             email: newContact.email,
             role: newContact.role,
-            company: company.name, // Force current company
+            company: currentCompany.name, // Force current company
             user_id: userId,
             owners: [newContact.owner], // Store owner
             status: 'New'
@@ -146,7 +200,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
         fetchData(); // Refresh list
         
         if (onNotify) {
-            onNotify('Contato Adicionado', `${newContact.name} agora faz parte de ${company.name}.`, 'success', 'contacts');
+            onNotify('Contato Adicionado', `${newContact.name} agora faz parte de ${currentCompany.name}.`, 'success', 'contacts');
         } else {
             alert("Contato adicionado a esta empresa!");
         }
@@ -167,8 +221,8 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
               title: newDeal.title,
               value: numericValue,
               status: newDeal.status,
-              company_id: company.id,
-              company_name: company.name,
+              company_id: currentCompany.id,
+              company_name: currentCompany.name,
               user_id: userId,
               created_at: new Date()
           }]);
@@ -191,7 +245,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
               title: newDeal.title,
               value: parseFloat(newDeal.value),
               status: newDeal.status,
-              company_id: company.id
+              company_id: currentCompany.id
           }]);
           
           setShowDealModal(false);
@@ -237,7 +291,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
                         name,
                         email,
                         role,
-                        company: company.name, // Force current company
+                        company: currentCompany.name, // Force current company
                         user_id: userId,
                         status: 'New'
                     });
@@ -249,9 +303,9 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
                 if (error) throw error;
                 
                 if (onNotify) {
-                    onNotify('Importação Completa', `${rowsToInsert.length} contatos adicionados a ${company.name}.`, 'success', 'contacts');
+                    onNotify('Importação Completa', `${rowsToInsert.length} contatos adicionados a ${currentCompany.name}.`, 'success', 'contacts');
                 } else {
-                    alert(`${rowsToInsert.length} contatos importados para ${company.name}!`);
+                    alert(`${rowsToInsert.length} contatos importados para ${currentCompany.name}!`);
                 }
                 
                 setIsImportModalOpen(false);
@@ -289,13 +343,13 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div className="flex items-start gap-4">
                 <div className="size-16 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 font-bold text-xl uppercase">
-                    {company.name.slice(0, 2)}
+                    {currentCompany.name.slice(0, 2)}
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        {company.name}
-                        {company.domain && (
-                            <a href={`https://${company.domain}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary">
+                        {currentCompany.name}
+                        {currentCompany.domain && (
+                            <a href={`https://${currentCompany.domain}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-primary">
                                 <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                             </a>
                         )}
@@ -303,21 +357,21 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-[16px]">domain</span>
-                            {company.industry || 'Indústria N/A'}
+                            {currentCompany.industry || 'Indústria N/A'}
                         </span>
                         <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
                         <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-[16px]">group</span>
-                            {company.size || 'Tam. N/A'}
+                            {currentCompany.size || 'Tam. N/A'}
                         </span>
                         <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
                         <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-[16px]">location_on</span>
-                            {company.location || 'Local N/A'}
+                            {currentCompany.location || 'Local N/A'}
                         </span>
                     </div>
                     <p className="mt-3 text-slate-600 dark:text-slate-300 max-w-2xl text-sm leading-relaxed">
-                        {company.description || "Sem descrição disponível."}
+                        {currentCompany.description || "Sem descrição disponível."}
                     </p>
                 </div>
             </div>
@@ -330,7 +384,10 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
                     <span className="material-symbols-outlined text-[18px]">add_card</span>
                     Novo Deal
                 </button>
-                <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+                <button 
+                    onClick={handleOpenEditCompany}
+                    className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+                >
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                     Editar Info
                 </button>
@@ -538,7 +595,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-[#151b2b] w-full max-w-md rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in zoom-in duration-200">
-                <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Novo Contato em {company.name}</h3>
+                <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Novo Contato em {currentCompany.name}</h3>
                 <form onSubmit={handleCreateContact} className="space-y-4">
                     <label className="block">
                         <span className="text-sm font-bold text-slate-500">Nome <span className="text-red-500">*</span></span>
@@ -641,12 +698,81 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
         </div>
       )}
 
+      {/* Edit Company Modal */}
+      {showEditCompanyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-[#151b2b] w-full max-w-lg rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 p-6 animate-in fade-in zoom-in duration-200">
+                <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-white">Editar Empresa</h3>
+                <form onSubmit={handleUpdateCompany} className="space-y-4">
+                    <label className="block">
+                        <span className="text-sm font-bold text-slate-500">Nome da Empresa</span>
+                        <input 
+                            className="w-full mt-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                            value={editCompanyData.name}
+                            onChange={e => setEditCompanyData({...editCompanyData, name: e.target.value})}
+                            required
+                        />
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <label className="block">
+                            <span className="text-sm font-bold text-slate-500">Indústria</span>
+                            <input 
+                                className="w-full mt-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                                value={editCompanyData.industry}
+                                onChange={e => setEditCompanyData({...editCompanyData, industry: e.target.value})}
+                            />
+                        </label>
+                        <label className="block">
+                            <span className="text-sm font-bold text-slate-500">Tamanho</span>
+                            <input 
+                                className="w-full mt-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                                value={editCompanyData.size}
+                                onChange={e => setEditCompanyData({...editCompanyData, size: e.target.value})}
+                                placeholder="Ex: 50-100"
+                            />
+                        </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <label className="block">
+                            <span className="text-sm font-bold text-slate-500">Website (Domínio)</span>
+                            <input 
+                                className="w-full mt-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                                value={editCompanyData.domain}
+                                onChange={e => setEditCompanyData({...editCompanyData, domain: e.target.value})}
+                            />
+                        </label>
+                        <label className="block">
+                            <span className="text-sm font-bold text-slate-500">Localização</span>
+                            <input 
+                                className="w-full mt-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                                value={editCompanyData.location}
+                                onChange={e => setEditCompanyData({...editCompanyData, location: e.target.value})}
+                            />
+                        </label>
+                    </div>
+                    <label className="block">
+                        <span className="text-sm font-bold text-slate-500">Descrição</span>
+                        <textarea 
+                            className="w-full mt-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 h-24 resize-none"
+                            value={editCompanyData.description}
+                            onChange={e => setEditCompanyData({...editCompanyData, description: e.target.value})}
+                        />
+                    </label>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button type="button" onClick={() => setShowEditCompanyModal(false)} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded">Cancelar</button>
+                        <button type="submit" className="px-4 py-2 text-sm font-bold bg-primary text-white rounded hover:bg-blue-700">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
       {/* Import CSV Modal */}
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-[#151b2b] w-full max-w-lg rounded-lg shadow-xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Importar para {company.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Importar para {currentCompany.name}</h3>
                     <button onClick={() => setIsImportModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -654,7 +780,7 @@ const CompanyDetailsPage: React.FC<CompanyDetailsPageProps> = ({ company, onBack
                 
                 <form onSubmit={handleImportSubmit} className="p-6 flex flex-col gap-4">
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded text-xs text-blue-700 dark:text-blue-300">
-                        <p>Os contatos importados serão vinculados automaticamente à empresa <b>{company.name}</b>.</p>
+                        <p>Os contatos importados serão vinculados automaticamente à empresa <b>{currentCompany.name}</b>.</p>
                         <p className="mt-1">Cabeçalhos necessários: <b>Name, Email</b> (Opcional: Role).</p>
                     </div>
 

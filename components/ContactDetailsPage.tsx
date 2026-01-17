@@ -139,6 +139,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
             instagram: formData.instagram,
             avatar: formData.avatar, // Ensure avatar URL is saved
             notes: updatedNotes,
+            owners: formData.owners, // Save owners change
             updated_at: new Date().toISOString()
         };
 
@@ -173,17 +174,21 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleOwner = (userName: string) => {
-    const currentOwners = data.owners || [];
-    let newOwners;
-    if (currentOwners.includes(userName)) {
-      newOwners = currentOwners.filter(o => o !== userName);
-    } else {
-      newOwners = [...currentOwners, userName];
-    }
+  const toggleOwner = async (userName: string) => {
+    // Single Select Logic: Replace the entire array with just the new user
+    const newOwners = [userName];
+    
+    // Update local state immediately for UI feedback
     const newData = { ...data, owners: newOwners };
     setData(newData);
     setFormData(newData);
+
+    // Persist to DB immediately (since this is a modal action, it expects immediate save usually)
+    try {
+        await supabase.from('contacts').update({ owners: newOwners }).eq('id', contact.id);
+    } catch (e) {
+        console.error("Error updating owner", e);
+    }
   };
 
   // --- Avatar Upload Logic ---
@@ -487,7 +492,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                          </span>
                          
                          <div className="flex items-center gap-2 ml-2 pl-4 border-l border-slate-200 dark:border-slate-700">
-                            <span className="text-[10px] uppercase font-bold text-slate-400">Responsáveis:</span>
+                            <span className="text-[10px] uppercase font-bold text-slate-400">Responsável:</span>
                             <div className="flex -space-x-2">
                                 {data.owners && data.owners.length > 0 ? (
                                     data.owners.map((owner: string, idx: number) => {
@@ -504,7 +509,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                                 <button 
                                     onClick={() => setIsOwnerModalOpen(true)}
                                     className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary hover:bg-slate-200 dark:hover:bg-slate-700 border-2 border-white dark:border-slate-800 flex items-center justify-center transition-colors"
-                                    title="Editar Responsáveis"
+                                    title="Editar Responsável"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">edit</span>
                                 </button>
@@ -545,11 +550,12 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ... (Rest of the component remains similar, just collapsing for brevity in XML if not changed, but I will include it to ensure consistency) */}
         
         {/* Left Column: Info & Personal (Width 7/12) */}
         <div className="lg:col-span-7 flex flex-col gap-6">
             
-            {/* Contact Info - EXPANDED */}
+            {/* Contact Info */}
             <div className="bg-white dark:bg-[#151b2b] rounded-lg border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
                     <span className="material-symbols-outlined text-primary text-[24px]">contact_phone</span>
@@ -740,7 +746,7 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-                    <h3 className="font-bold text-slate-900 dark:text-white">Gerenciar Responsáveis</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white">Selecionar Responsável</h3>
                     <button onClick={() => setIsOwnerModalOpen(false)} className="text-slate-400 hover:text-slate-600"><span className="material-symbols-outlined">close</span></button>
                 </div>
                 <div className="p-2 max-h-[300px] overflow-y-auto">
@@ -764,7 +770,11 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                                     <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>{userName}</p>
                                     <p className="text-xs text-slate-400 truncate">{user.email}</p>
                                 </div>
-                                {isSelected && <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>}
+                                {isSelected ? (
+                                    <span className="material-symbols-outlined text-primary text-[20px]">radio_button_checked</span>
+                                ) : (
+                                    <span className="material-symbols-outlined text-slate-300 text-[20px]">radio_button_unchecked</span>
+                                )}
                             </div>
                         );
                     })}
@@ -812,7 +822,6 @@ const ContactDetailsPage: React.FC<ContactDetailsPageProps> = ({ contact, onBack
                             <span className="text-xs font-medium text-slate-400">{zoom.toFixed(1)}x</span>
                         </div>
                         
-                        {/* Zoom Controls Buttons Added */}
                         <div className="flex items-center gap-3">
                             <button 
                                 onClick={() => setZoom(Math.max(1, zoom - 0.1))} 
